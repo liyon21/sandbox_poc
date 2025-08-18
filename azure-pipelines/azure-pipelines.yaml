@@ -1,0 +1,118 @@
+trigger:
+  branches:
+    include:
+      - main
+
+pr:
+  branches:
+    include:
+      - main
+
+variables:
+  # Dynamic variables that can be overridden in pipeline or variable groups
+  ParametersFile: '$(Build.SourcesDirectory)/parameters.json'
+  DataFolder: '$(Build.SourcesDirectory)/data'
+  AzureServiceConnection: 'sandbox-poc'
+
+stages:
+  - stage: CreateRG
+    displayName: "Stage 1: Create Resource Group"
+    jobs:
+      - job: CreateRG
+        displayName: "Create RG"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            name: CreateRGStep
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🚀 Running create-rg.ps1..."
+                & "$(Build.SourcesDirectory)/scripts/create-rg.ps1" -ParametersFile "$(ParametersFile)"
+
+  - stage: Deploy
+    displayName: "Stage 2: Deploy Infrastructure"
+    dependsOn: CreateRG
+    jobs:
+      - job: DeployInfra
+        displayName: "Deploy Bicep Templates"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            name: DeployStep
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🚀 Running deploy.ps1..."
+                & "$(Build.SourcesDirectory)/scripts/deploy.ps1" -ParametersFile "$(ParametersFile)"
+
+  - stage: PostDeployVerify
+    displayName: "Stage 3: Post-Deployment Verification"
+    dependsOn: Deploy
+    jobs:
+      - job: Verify
+        displayName: "Post-Deploy Verify"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            name: VerifyStep
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🚀 Running post-deploy-verify.ps1..."
+                & "$(Build.SourcesDirectory)/scripts/post-deploy-verify.ps1" -ParametersFile "$(ParametersFile)"
+
+  - stage: StorageUpload
+    displayName: "Stage 4: Storage Upload"
+    dependsOn: PostDeployVerify
+    jobs:
+      - job: Storage
+        displayName: "Upload Data to Storage"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            name: StorageStep
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🚀 Running storage-upload.ps1..."
+                & "$(Build.SourcesDirectory)/scripts/storage-upload.ps1" `
+                  -ParametersFile "$(ParametersFile)" `
+                  -DataFolder "$(DataFolder)"
+
+  - stage: Destroy
+    displayName: "Stage 5: Destroy Resources"
+    dependsOn: []
+    condition: and(succeeded(), eq(variables['DestroyResources'], 'true'))
+    jobs:
+      - job: DestroyRG
+        displayName: "Destroy RG"
+        pool:
+          vmImage: 'windows-latest'
+        steps:
+          - checkout: self
+          - task: AzureCLI@2
+            name: DestroyStep
+            inputs:
+              azureSubscription: '$(AzureServiceConnection)'
+              scriptType: 'ps'
+              scriptLocation: 'inlineScript'
+              inlineScript: |
+                Write-Host "🚀 Running destroy.ps1..."
+                & "$(Build.SourcesDirectory)/scripts/destroy.ps1" -ParametersFile "$(ParametersFile)"

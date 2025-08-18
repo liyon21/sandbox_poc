@@ -1,0 +1,24 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "location": { "value": "eastus" },
+    "tags": { "value": { "Project": "Sandbox" } },
+    "vmName": { "value": "poc-vm" },
+    "adminUsername": { "value": "azureuser" },
+    "adminPassword": { "value": "Password@123!" },
+    "vmSize": { "value": "Standard_B2s" },
+    "databricksName": { "value": "sandbox-databricks" },
+    "managedRgName": { "value": "databricks-managed-rg" },
+    "vnetName": { "value": "sandbox-vnet" },
+    "vnetAddressPrefix": { "value": "10.0.0.0/16" },
+    "vmSubnetName": { "value": "sandbox-vm-subnet" },
+    "vmSubnetPrefix": { "value": "10.0.1.0/24" },
+    "databricksPrivateSubnetName": { "value": "sandbox-databricks-private-subnet" },
+    "databricksPrivateSubnetPrefix": { "value": "10.0.2.0/24" },
+    "databricksPublicSubnetName": { "value": "sandbox-databricks-public-subnet" },
+    "databricksPublicSubnetPrefix": { "value": "10.0.3.0/24" },
+    "storageAccountName": { "value": "sandboxpoc" },
+    "storageAccountSkuName": { "value": "Standard_LRS" }
+  }
+}
