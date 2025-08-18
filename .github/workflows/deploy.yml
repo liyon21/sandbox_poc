@@ -1,0 +1,32 @@
+name: Deploy Infrastructure
+
+# Manual trigger only
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Create Resource Group
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/scripts/create-rg.ps1" -ParametersFile "${{ github.workspace }}/parameters.json"
+
+      - name: Deploy Bicep Templates
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/scripts/deploy.ps1" -ParametersFile "${{ github.workspace }}/parameters.json"
+
+      - name: Post-Deployment Verification
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/scripts/post-deploy-verify.ps1" -ParametersFile "${{ github.workspace }}/parameters.json"
+
+      - name: Upload Data to Storage
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/scripts/storage-upload.ps1" -ParametersFile "${{ github.workspace }}/parameters.json" -DataFolder "${{ github.workspace }}/data"

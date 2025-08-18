@@ -1,0 +1,17 @@
+name: Destroy Infrastructure
+
+# Manual trigger only
+on:
+  workflow_dispatch:
+
+jobs:
+  destroy:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Destroy Resource Group
+        shell: pwsh
+        run: |
+          & "${{ github.workspace }}/scripts/destroy.ps1" -ParametersFile "${{ github.workspace }}/parameters.json"
