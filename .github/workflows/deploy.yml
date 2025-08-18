@@ -1,4 +1,4 @@
-name: Azure Sandbox Workflow
+name: Azure Sandbox Deploy Workflow
 
 # Manual trigger only
 on:
@@ -14,33 +14,18 @@ env:
   DataFolder: './data'
 
 jobs:
-  # -------------------- Azure Login --------------------
-  azure-login:
-    name: Azure Login
-    runs-on: windows-latest
-    outputs:
-      AZURE_LOGGED_IN: ${{ steps.login.outcome }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-
-      - name: Login to Azure
-        id: login
-        uses: azure/login@v1
-        with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-
   # -------------------- Stage 1: Create Resource Group --------------------
   create-rg:
     name: Create Resource Group
     runs-on: windows-latest
-    needs: azure-login
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Run create-rg.ps1
         shell: pwsh
@@ -49,13 +34,18 @@ jobs:
           & "./scripts/create-rg.ps1" -ParametersFile "${{ env.ParametersFile }}"
 
   # -------------------- Stage 2: Deploy Infrastructure --------------------
-  deploy-infra:
+  deploy:
     name: Deploy Infrastructure
     runs-on: windows-latest
     needs: create-rg
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Run deploy.ps1
         shell: pwsh
@@ -63,14 +53,19 @@ jobs:
           Write-Host "🚀 Running deploy.ps1..."
           & "./scripts/deploy.ps1" -ParametersFile "${{ env.ParametersFile }}"
 
-  # -------------------- Stage 3: Post-Deploy Verification --------------------
+  # -------------------- Stage 3: Post-Deployment Verification --------------------
   post-deploy-verify:
     name: Post-Deploy Verification
     runs-on: windows-latest
-    needs: deploy-infra
+    needs: deploy
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Run post-deploy-verify.ps1
         shell: pwsh
@@ -80,12 +75,17 @@ jobs:
 
   # -------------------- Stage 4: Storage Upload --------------------
   storage-upload:
-    name: Storage Upload
+    name: Upload Data to Storage
     runs-on: windows-latest
     needs: post-deploy-verify
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Run storage-upload.ps1
         shell: pwsh
@@ -93,15 +93,20 @@ jobs:
           Write-Host "🚀 Running storage-upload.ps1..."
           & "./scripts/storage-upload.ps1" -ParametersFile "${{ env.ParametersFile }}" -DataFolder "${{ env.DataFolder }}"
 
-  # -------------------- Stage 5: Optional Destroy --------------------
+  # -------------------- Stage 5: Destroy Resources (Optional / Manual) --------------------
   destroy:
-    name: Destroy Resources (Optional)
+    name: Destroy Resources
     runs-on: windows-latest
+    if: github.event.inputs.DestroyResources == 'true'
     needs: storage-upload
-    if: ${{ github.event.inputs.DestroyResources == 'true' }}
     steps:
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Run destroy.ps1
         shell: pwsh
