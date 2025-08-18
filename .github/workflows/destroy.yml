@@ -11,7 +11,13 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Destroy Resource Group
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run destroy.ps1
         shell: pwsh
         run: |
+          Write-Host "🚀 Running destroy.ps1..."
           & "${{ github.workspace }}/scripts/destroy.ps1" -ParametersFile "${{ github.workspace }}/parameters.json"
