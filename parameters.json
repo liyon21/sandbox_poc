@@ -18,6 +18,9 @@
     "databricksPublicSubnetName": { "value": "sandbox-databricks-public-subnet" },
     "databricksPublicSubnetPrefix": { "value": "10.0.3.0/24" },
     "storageAccountName": { "value": "sandboxpoc" },
-    "storageAccountSkuName": { "value": "Standard_LRS" }
+    "storageAccountSkuName": { "value": "Standard_LRS" },
+    "inputContainerName": { "value": "input" },
+    "outputContainerName": { "value": "output" },
+    "enableManagedIdentity": { "value": true }
   }
 }

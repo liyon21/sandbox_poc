@@ -22,6 +22,9 @@ param storageAccountName string
 @description('Managed resource group ID where Databricks resources will be deployed')
 param managedRgId string
 
+@description('Resource ID of the user-assigned managed identity')
+param userAssignedIdentityId string = ''
+
 resource databricksWorkspace 'Microsoft.Databricks/workspaces@2025-03-01-preview' = {
   name: databricksName
   location: location
@@ -35,6 +38,11 @@ resource databricksWorkspace 'Microsoft.Databricks/workspaces@2025-03-01-preview
       storageAccountName: { value: storageAccountName }
       enableNoPublicIp: { value: true }
     }
+    accessConnector: {
+      id: userAssignedIdentityId  // Link to a user-assigned managed identity
+      identityType: 'UserAssigned'
+      userAssignedIdentityId: userAssignedIdentityId
+    }
   }
   sku: {
     name: 'premium'
@@ -42,5 +50,8 @@ resource databricksWorkspace 'Microsoft.Databricks/workspaces@2025-03-01-preview
   }
 }
 
-// Output the Databricks workspace resource ID for referencing in main.bicep
+// Output the Databricks workspace resource ID
 output databricksId string = databricksWorkspace.id
+
+// Output the managed identity principal ID (if using user-assigned, adjust logic)
+output principalId string = userAssignedIdentityId != '' ? (reference(userAssignedIdentityId, '2023-01-01').principalId) : ''

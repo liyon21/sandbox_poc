@@ -71,28 +71,21 @@ foreach ($disk in $disks) {
     az disk delete -g $ResourceGroupName -n $disk --yes
 }
 
-# 5. Delete NSGs
-$nsgs = az network nsg list -g $ResourceGroupName --query "[].name" -o tsv
-foreach ($nsg in $nsgs) {
-    Write-Host "Deleting NSG: $nsg ..."
-    az network nsg delete -g $ResourceGroupName -n $nsg
-}
-
-# 6. Delete Storage Accounts
+# 5. Delete Storage Accounts
 $stgs = az storage account list -g $ResourceGroupName --query "[].name" -o tsv
 foreach ($stg in $stgs) {
     Write-Host "Deleting Storage Account: $stg ..."
     az storage account delete -g $ResourceGroupName -n $stg --yes
 }
 
-# 7. Delete VNet last
+# 6. Delete VNet last
 $vnets = az network vnet list -g $ResourceGroupName --query "[].name" -o tsv
 foreach ($vnet in $vnets) {
     Write-Host "Deleting VNet: $vnet ..."
     az network vnet delete -g $ResourceGroupName -n $vnet
 }
 
-# 8. Catch any remaining resources
+# 7. Catch any remaining resources
 $resources = az resource list -g $ResourceGroupName --query "[].id" -o tsv
 foreach ($resId in $resources) {
     Write-Host "Deleting leftover resource: $resId ..."
