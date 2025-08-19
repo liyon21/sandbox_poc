@@ -20,7 +20,6 @@
     "storageAccountName": { "value": "sandboxpoc" },
     "storageAccountSkuName": { "value": "Standard_LRS" },
     "inputContainerName": { "value": "input" },
-    "outputContainerName": { "value": "output" },
-    "enableManagedIdentity": { "value": true }
+    "outputContainerName": { "value": "output" }
   }
 }

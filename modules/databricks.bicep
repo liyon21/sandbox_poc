@@ -38,11 +38,14 @@ resource databricksWorkspace 'Microsoft.Databricks/workspaces@2025-03-01-preview
       storageAccountName: { value: storageAccountName }
       enableNoPublicIp: { value: true }
     }
-    accessConnector: {
-      id: userAssignedIdentityId  // Link to a user-assigned managed identity
-      identityType: 'UserAssigned'
-      userAssignedIdentityId: userAssignedIdentityId
-    }
+   // Conditionally add accessConnector only if userAssignedIdentityId is not empty
+    ...(empty(userAssignedIdentityId) ? {} : {
+      accessConnector: {
+        id: userAssignedIdentityId
+        identityType: 'UserAssigned'
+        userAssignedIdentityId: userAssignedIdentityId
+      }
+    })
   }
   sku: {
     name: 'premium'

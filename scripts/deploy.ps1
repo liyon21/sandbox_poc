@@ -67,22 +67,30 @@ if ($existingDeployment.Count -gt 0) {
 
 # -------------------- Deploy Bicep with randomized Databricks name --------------------
 Write-Host "Starting deployment..."
-$provisioningState = az deployment group create `
-    --resource-group $ResourceGroupName `
-    --name $deploymentName `
-    --template-file $TemplateFile `
-    --parameters @$ParametersFile `
-    --parameters databricksName=$DatabricksNameRandomized `
-    --query "properties.provisioningState" -o tsv
+$deploymentResult = az deployment group create `
+  --resource-group $ResourceGroupName `
+  --name $deploymentName `
+  --template-file $TemplateFile `
+  --parameters @$ParametersFile `
+  --parameters databricksName=$DatabricksNameRandomized `
+  --output json
 
-if ($LASTEXITCODE -ne 0 -or $provisioningState -ne "Succeeded") {
-    Write-Host "Deployment failed (provisioningState=$provisioningState)." -ForegroundColor Red
-    # Show last error if any
-    az deployment group show -g $ResourceGroupName -n $deploymentName -o json
+if ($LASTEXITCODE -ne 0) {
+    Write-Host "Deployment failed due to CLI error." -ForegroundColor Red
+    exit 1
+}
+
+# Convert the JSON output once
+$deploymentJson = $deploymentResult | ConvertFrom-Json
+
+# Check provisioning state
+if ($deploymentJson.properties.provisioningState -ne "Succeeded") {
+    Write-Host "Deployment failed (provisioningState=$($deploymentJson.properties.provisioningState))." -ForegroundColor Red
     exit 1
 }
 
 Write-Host "Deployment succeeded."
+
 
 # -------------------- Show deployment outputs --------------------
 Write-Host "`nDeployment outputs:"
