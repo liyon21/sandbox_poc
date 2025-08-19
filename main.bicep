@@ -13,7 +13,6 @@ param vmSize string = 'Standard_B1s'
 
 // ------------------- Databricks Configuration -------------------
 param databricksName string
-// param managedRgName string
 
 // ------------------- Storage Configuration -------------------
 param storageAccountName string
@@ -42,25 +41,25 @@ param uniqueId string = uniqueString(resourceGroup().id)
 
 // ------------------- Derived Values -------------------
 
-// Create a deterministic managed resource group name for Databricks
+// Managed resource group for Databricks
 var managedRgName = '${databricksName}-managed-rg'
 var managedRgId = '/subscriptions/${subscription().subscriptionId}/resourceGroups/${managedRgName}'
 
-// Storage account unique name (use uniqueId instead of timestamp)
+// Storage account unique name
 var saUniq = substring(uniqueId, 0, 6)
 var storageRaw = toLower('${storageAccountName}${saUniq}')
-var storageAccountNameWithTimestamp = length(storageRaw) >= 24 ? substring(storageRaw, 0, 24) : storageRaw
+var storageAccountNameUnique = length(storageRaw) > 24 ? substring(storageRaw, 0, 24) : storageRaw
 
-// Databricks DBFS account unique name (14-character limit)
+// Databricks DBFS account unique name (14-char limit)
 var dbfsAccountPrefix = 'db'
 var dbxBase0 = toLower(replace(replace(replace(databricksName, '-', ''), '_', ''), ' ', ''))
-var dbxBase  = substring(dbxBase0, 0, min([6, length(dbxBase0)]))
-var dbxUniq = substring(uniqueId, 0, 6)  // Use stable uniqueId
-var dbfsAccountNameTrimmed = length('${dbfsAccountPrefix}${dbxBase}${dbxUniq}') >= 14 ? substring('${dbfsAccountPrefix}${dbxBase}${dbxUniq}', 0, 14) : '${dbfsAccountPrefix}${dbxBase}${dbxUniq}'
+var dbxBase = substring(dbxBase0, 0, min([6, length(dbxBase0)]))
+var dbxUniq = substring(uniqueId, 0, 6)
+var dbfsAccountNameTrimmed = length('${dbfsAccountPrefix}${dbxBase}${dbxUniq}') > 14 ? substring('${dbfsAccountPrefix}${dbxBase}${dbxUniq}', 0, 14) : '${dbfsAccountPrefix}${dbxBase}${dbxUniq}'
 
 // ------------------- Resources -------------------
 
-// Deploy NSG for VM
+// NSG for VM
 module nsgModule 'modules/nsg.bicep' = {
   name: 'nsgDeployment'
   params: {
@@ -69,7 +68,7 @@ module nsgModule 'modules/nsg.bicep' = {
   }
 }
 
-// Deploy empty NSGs for Databricks subnets
+// NSGs for Databricks Subnets
 resource databricksPrivateNSG 'Microsoft.Network/networkSecurityGroups@2024-07-01' = {
   name: '${databricksPrivateSubnetName}-nsg'
   location: location
@@ -82,7 +81,7 @@ resource databricksPublicNSG 'Microsoft.Network/networkSecurityGroups@2024-07-01
   tags: tags
 }
 
-// Deploy VNet with NSG attachments
+// VNet with attached NSGs
 module vnetModule 'modules/vnet.bicep' = {
   name: 'vnetDeployment'
   params: {
@@ -101,9 +100,9 @@ module vnetModule 'modules/vnet.bicep' = {
   }
 }
 
-// Deploy Storage Account
+// Storage Account with blob support and containers
 resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
-  name: storageAccountNameWithTimestamp
+  name: storageAccountNameUnique
   location: location
   tags: tags
   sku: {
@@ -113,34 +112,32 @@ resource storageAccount 'Microsoft.Storage/storageAccounts@2023-01-01' = {
   properties: {
     accessTier: 'Hot'
     supportsHttpsTrafficOnly: true
+    allowBlobPublicAccess: false
   }
 }
 
-// Define Blob Services as a child resource
 resource blobServices 'Microsoft.Storage/storageAccounts/blobServices@2023-01-01' = {
   name: 'default'
   parent: storageAccount
 }
 
-// Add Input Container
 resource inputContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
-  name: inputContainerName
+  name: toLower(inputContainerName)  // Enforce lowercase for container names
   parent: blobServices
   properties: {
     publicAccess: 'None'
   }
 }
 
-// Add Output Container
 resource outputContainer 'Microsoft.Storage/storageAccounts/blobServices/containers@2023-01-01' = {
-  name: outputContainerName
+  name: toLower(outputContainerName)  // Enforce lowercase for container names
   parent: blobServices
   properties: {
     publicAccess: 'None'
   }
 }
 
-// Deploy VM
+// VM deployment module
 module vmModule 'modules/vm.bicep' = {
   name: 'vmDeployment'
   params: {
@@ -155,7 +152,7 @@ module vmModule 'modules/vm.bicep' = {
   }
 }
 
-// Deploy Databricks Workspace
+// Databricks workspace module
 module databricksModule 'modules/databricks.bicep' = {
   name: 'databricksDeployment'
   params: {
@@ -177,7 +174,7 @@ output databricksId string = databricksModule.outputs.databricksId
 output storageId string = storageAccount.id
 output databricksPrivateNSGId string = databricksPrivateNSG.id
 output databricksPublicNSGId string = databricksPublicNSG.id
-output storageAccountNameWithTimestamp string = storageAccountNameWithTimestamp
+output storageAccountNameUnique string = storageAccountNameUnique
 output databricksManagedIdentityPrincipalId string = databricksModule.outputs.principalId
 output inputContainerName string = inputContainerName
 output outputContainerName string = outputContainerName
