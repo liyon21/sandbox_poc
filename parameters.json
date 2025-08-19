@@ -9,7 +9,6 @@
     "adminPassword": { "value": "Password@123!" },
     "vmSize": { "value": "Standard_B2s" },
     "databricksName": { "value": "sandbox-databricks" },
-    "managedRgName": { "value": "databricks-managed-rg" },
     "vnetName": { "value": "sandbox-vnet" },
     "vnetAddressPrefix": { "value": "10.0.0.0/16" },
     "vmSubnetName": { "value": "sandbox-vm-subnet" },

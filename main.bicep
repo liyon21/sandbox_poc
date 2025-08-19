@@ -13,7 +13,7 @@ param vmSize string = 'Standard_B1s'
 
 // ------------------- Databricks Configuration -------------------
 param databricksName string
-param managedRgName string
+// param managedRgName string
 
 // ------------------- Storage Configuration -------------------
 param storageAccountName string
@@ -34,6 +34,9 @@ param databricksPublicSubnetPrefix string
 param timestamp string = utcNow()
 
 // ------------------- Derived Values -------------------
+
+// Create a deterministic managed resource group name for Databricks
+var managedRgName = '${databricksName}-managed-rg'
 var managedRgId = '/subscriptions/${subscription().subscriptionId}/resourceGroups/${managedRgName}'
 
 // Clean timestamp for names
