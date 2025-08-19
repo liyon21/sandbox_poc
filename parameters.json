@@ -3,7 +3,7 @@
   "contentVersion": "1.0.0.0",
   "parameters": {
     "location": { "value": "eastus" },
-    "tags": { "value": { "Project": "Sandbox" } },
+    "tags": { "value": { "Project": "sandbox-poc" } },
     "vmName": { "value": "poc-vm" },
     "adminUsername": { "value": "azureuser" },
     "adminPassword": { "value": "Password@123!" },
