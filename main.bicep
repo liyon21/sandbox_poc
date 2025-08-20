@@ -51,7 +51,7 @@ var storageRaw = toLower('${storageAccountName}${saUniq}')
 var storageAccountNameUnique = length(storageRaw) > 24 ? substring(storageRaw, 0, 24) : storageRaw
 
 // Databricks DBFS account unique name (14-char limit)
-var dbfsAccountPrefix = 'db'
+var dbfsAccountPrefix = 'dtbx'
 var dbxBase0 = toLower(replace(replace(replace(databricksName, '-', ''), '_', ''), ' ', ''))
 var dbxBase = substring(dbxBase0, 0, min([6, length(dbxBase0)]))
 var dbxUniq = substring(uniqueId, 0, 6)
