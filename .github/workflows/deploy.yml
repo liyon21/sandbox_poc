@@ -1,6 +1,5 @@
 name: Azure Sandbox Deploy Workflow
 
-# Manual trigger only
 on:
   workflow_dispatch:
     inputs:
@@ -93,12 +92,36 @@ jobs:
           Write-Host "🚀 Running storage-upload.ps1..."
           & "./scripts/storage-upload.ps1" -ParametersFile "${{ env.ParametersFile }}" -DataFolder "${{ env.DataFolder }}"
 
-  # -------------------- Stage 5: Destroy Resources (Optional / Manual) --------------------
+  # -------------------- Stage 5: Databricks API Flow --------------------
+  databricks-job:
+    name: Databricks API Flow
+    runs-on: windows-latest
+    needs: storage-upload
+    env:
+      DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Azure Login
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Run databricks-api-flow.ps1
+        shell: pwsh
+        env:
+          DATABRICKS_TOKEN: ${{ secrets.DATABRICKS_TOKEN }}
+        run: |
+          Write-Host "🚀 Running databricks-api-flow.ps1..."
+          & "./scripts/databricks-api-flow.ps1"
+
+  # -------------------- Stage 6: Destroy Resources (Optional / Manual) --------------------
   destroy:
     name: Destroy Resources
     runs-on: windows-latest
     if: github.event.inputs.DestroyResources == 'true'
-    needs: storage-upload
+    needs: databricks-job
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
